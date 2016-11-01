@@ -1,0 +1,26 @@
+{
+    "author": "Pirate Experiment",
+    "dependencies": {},
+    "keywords": [],
+    "name": "camera-toolbox",
+    "pebble": {
+        "displayName": "Camera Toolbox",
+        "enableMultiJS": true,
+        "messageKeys": [],
+        "projectType": "native",
+        "resources": {
+            "media": []
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "chalk"
+        ],
+        "uuid": "3ca8bef6-582c-46f1-9cd9-2a4db767edab",
+        "watchapp": {
+            "watchface": false
+        }
+    },
+    "version": "1.0.0"
+}
