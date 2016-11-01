@@ -9,13 +9,23 @@
         "messageKeys": [],
         "projectType": "native",
         "resources": {
-            "media": []
+            "media": [
+                {
+                    "characterRegex": "{0-9]",
+                    "file": "fonts/teko",
+                    "name": "FONT_TEKO_24",
+                    "targetPlatforms": null,
+                    "type": "font"
+                }
+            ]
         },
         "sdkVersion": "3",
         "targetPlatforms": [
             "aplite",
             "basalt",
-            "chalk"
+            "chalk",
+            "diorite",
+            "emery"
         ],
         "uuid": "3ca8bef6-582c-46f1-9cd9-2a4db767edab",
         "watchapp": {

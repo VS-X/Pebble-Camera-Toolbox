@@ -1,11 +1,15 @@
 #include <pebble.h>
+#define BG_COL_BLUE PBL_IF_COLOR_ELSE(GColorMidnightGreen, GColorBlack)
+
+
 //TODO :
-// Support pebble OG
+// DONE Support pebble OG
 // Support Round
-// Persistent
+// DONE Persistent
 // Companion app / window for settings
 // Design
 // Logos
+
 static Window *s_main_window;
 
 static StatusBarLayer *s_status_bar;;
@@ -27,12 +31,16 @@ static char s_coc_text[8];
 
 const char yourFocal_text[6] = "Focal\0";
 const char yourAperture_text[3] = "f/\0";
-const char yourCoc_text[20] = "Circle of Confusion\0";
-const char yourHyperfocal_text[11] = "Hyperfocal\0";
+const char yourCoc_text[20] = PBL_IF_RECT_ELSE("Circle of Confusion\0", "CoC\0");
+const char yourHyperfocal_text[14] = "Hyperfocal(m)\0";
 
-static int s_focal = 30;
-static int s_aperture = 80;
-static int s_coc = 19;
+uint32_t key_coc = 19;
+uint32_t key_focal = 30;
+uint32_t key_aperture = 40;
+
+static int s_focal;
+static int s_aperture;
+static int s_coc;
 static float s_hyperfocal;
 
 static bool cocEditable = 1;
@@ -50,7 +58,7 @@ char* floatToString(char* buffer, int bufferSize, double number)
 		strcat(buffer, decimalBuffer);
 		
 		}
-		strcat(buffer, "m");
+		//strcat(buffer, "m");
 		return buffer;
 	}
 
@@ -85,28 +93,47 @@ char* apertureToString(char* buffer, int bufferSize, int number)
 
 static void update() {
 	if (cocEditable == 1) {
-		text_layer_set_background_color(s_coc_layer, GColorElectricBlue);
-		text_layer_set_background_color(s_yourCoc_layer, GColorElectricBlue);
+		
+		text_layer_set_background_color(s_coc_layer, BG_COL_BLUE);
+		text_layer_set_background_color(s_yourCoc_layer, BG_COL_BLUE);
+		text_layer_set_text_color(s_coc_layer, GColorWhite);
+		text_layer_set_text_color(s_yourCoc_layer, GColorWhite);
 		text_layer_set_background_color(s_focal_layer, GColorClear);
 		text_layer_set_background_color(s_yourFocal_layer, GColorClear);
+		text_layer_set_text_color(s_focal_layer, GColorBlack);
+		text_layer_set_text_color(s_yourFocal_layer, GColorBlack);
 		text_layer_set_background_color(s_aperture_layer, GColorClear);
 		text_layer_set_background_color(s_yourAperture_layer, GColorClear);
+		text_layer_set_text_color(s_aperture_layer, GColorBlack);
+		text_layer_set_text_color(s_yourAperture_layer, GColorBlack);
 	}
 	else if (focalEditable == 1) {
 		text_layer_set_background_color(s_coc_layer, GColorClear);
 		text_layer_set_background_color(s_yourCoc_layer, GColorClear);
-		text_layer_set_background_color(s_focal_layer, GColorElectricBlue);
-		text_layer_set_background_color(s_yourFocal_layer, GColorElectricBlue);
+		text_layer_set_text_color(s_coc_layer, GColorBlack);
+		text_layer_set_text_color(s_yourCoc_layer, GColorBlack);
+		text_layer_set_background_color(s_focal_layer, BG_COL_BLUE);
+		text_layer_set_background_color(s_yourFocal_layer, BG_COL_BLUE);
+		text_layer_set_text_color(s_focal_layer, GColorWhite);
+		text_layer_set_text_color(s_yourFocal_layer, GColorWhite);
 		text_layer_set_background_color(s_aperture_layer, GColorClear);
 		text_layer_set_background_color(s_yourAperture_layer, GColorClear);
+		text_layer_set_text_color(s_aperture_layer, GColorBlack);
+		text_layer_set_text_color(s_yourAperture_layer, GColorBlack);
 	}
 	else if (apertureEditable == 1) {
 		text_layer_set_background_color(s_coc_layer, GColorClear);
 		text_layer_set_background_color(s_yourCoc_layer, GColorClear);
+		text_layer_set_text_color(s_coc_layer, GColorBlack);
+		text_layer_set_text_color(s_yourCoc_layer, GColorBlack);
 		text_layer_set_background_color(s_focal_layer, GColorClear);
 		text_layer_set_background_color(s_yourFocal_layer, GColorClear);
-		text_layer_set_background_color(s_aperture_layer, GColorElectricBlue);
-		text_layer_set_background_color(s_yourAperture_layer, GColorElectricBlue);
+		text_layer_set_text_color(s_focal_layer, GColorBlack);
+		text_layer_set_text_color(s_yourFocal_layer, GColorBlack);
+		text_layer_set_background_color(s_aperture_layer, BG_COL_BLUE);
+		text_layer_set_background_color(s_yourAperture_layer, BG_COL_BLUE);
+		text_layer_set_text_color(s_aperture_layer, GColorWhite);
+		text_layer_set_text_color(s_yourAperture_layer, GColorWhite);
 	}
 	
 	s_hyperfocal = ((s_focal*s_focal)/(((float)s_aperture/10)*((float)s_coc/1000))+s_focal)/1000;	
@@ -115,6 +142,9 @@ static void update() {
 	text_layer_set_text(s_coc_layer, cocToString(s_coc_text,sizeof(s_coc_text),s_coc));
 	text_layer_set_text(s_aperture_layer, apertureToString(s_aperture_text, sizeof (s_aperture_text), s_aperture));
 	text_layer_set_text(s_focal_layer, focalToString(s_focal_text, sizeof(s_focal_text), s_focal));
+	persist_write_int(key_coc, s_coc);
+	persist_write_int(key_focal, s_focal);
+	persist_write_int(key_aperture, s_aperture);
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context){
@@ -208,28 +238,55 @@ static void click_config_provider(void *context) {
 
 static void main_window_load(Window *window) {
 	// Get information about the Window
-	Layer *window_layer = window_get_root_layer(window);
-	
 	s_status_bar = status_bar_layer_create();
+	
+	Layer *window_layer = window_get_root_layer(window);
+	GRect window_bounds = layer_get_unobstructed_bounds(window_layer);
+	GRect layer_bounds = window_bounds;
+	layer_bounds.size.w /= 2;
 	
 	
 	// Create TextLayer with specific bounds
-	s_yourCoc_layer = text_layer_create (GRect(0, 10, 144, 24));
-	s_coc_layer = text_layer_create (GRect(0, 30, 144, 28));
+	s_yourCoc_layer = text_layer_create (GRect(0, PBL_IF_RECT_ELSE(10,18), window_bounds.size.w, 25));
+	s_coc_layer = text_layer_create (GRect(0, PBL_IF_RECT_ELSE(35,42), window_bounds.size.w, 26));
 	
-	s_yourFocal_layer = text_layer_create (GRect(0, 60, 72, 30));
-	s_focal_layer = text_layer_create (GRect(0, 80, 72, 30));
+	s_yourFocal_layer = text_layer_create (GRect(0, PBL_IF_RECT_ELSE(60,67), layer_bounds.size.w, 30));
+	s_focal_layer = text_layer_create (GRect(0, PBL_IF_RECT_ELSE(85,92), layer_bounds.size.w, 26));
 	
-	s_yourAperture_layer = text_layer_create (GRect(72, 60, 72, 30));
-	s_aperture_layer = text_layer_create (GRect(72, 80, 72, 30));
+	s_yourAperture_layer = text_layer_create (GRect(layer_bounds.size.w, PBL_IF_RECT_ELSE(60,67), layer_bounds.size.w, 30));
+	s_aperture_layer = text_layer_create (GRect(layer_bounds.size.w, PBL_IF_RECT_ELSE(85,92), layer_bounds.size.w, 26));
 	
-	s_yourHyperfocal_layer = text_layer_create (GRect(0, 110, 144, 38));
-	s_hyperfocal_layer = text_layer_create (GRect(0, 133, 144, 28));
+	s_yourHyperfocal_layer = text_layer_create (GRect(0, 115, window_bounds.size.w, 38));
+	s_hyperfocal_layer = text_layer_create (GRect(0, 137, window_bounds.size.w, 28));
 		
+	if (persist_exists(key_coc)) {
+  // Read persisted value
+  s_coc = persist_read_int(key_coc);
+	} 
+	else {
+  s_coc = 19;
+	}
+	
+	if (persist_exists(key_focal)) {
+  // Read persisted value
+  s_focal = persist_read_int(key_focal);
+	} 
+	else {
+  s_focal = 30;
+	}
+	
+	if (persist_exists(key_aperture)) {
+  // Read persisted value
+  s_aperture = persist_read_int(key_aperture);
+	} 
+	else {
+  s_aperture = 40;
+	}
+	
 	text_layer_set_background_color(s_coc_layer, GColorClear);
 	text_layer_set_text_color(s_coc_layer, GColorBlack);
 	text_layer_set_text(s_coc_layer, cocToString(s_coc_text, sizeof (s_coc_text), s_coc));
-	text_layer_set_font(s_coc_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+	text_layer_set_font(s_coc_layer, fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS));
   text_layer_set_text_alignment(s_coc_layer, GTextAlignmentCenter);
 	
 	text_layer_set_background_color(s_yourCoc_layer, GColorClear);
@@ -241,7 +298,7 @@ static void main_window_load(Window *window) {
 	text_layer_set_background_color(s_focal_layer, GColorClear);
 	text_layer_set_text_color(s_focal_layer, GColorBlack);
 	text_layer_set_text(s_focal_layer, focalToString(s_focal_text, sizeof(s_focal_text), s_focal));
-	text_layer_set_font(s_focal_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+	text_layer_set_font(s_focal_layer, fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS));
   text_layer_set_text_alignment(s_focal_layer, GTextAlignmentCenter);
 	
 	text_layer_set_background_color(s_yourFocal_layer, GColorClear);
@@ -253,7 +310,7 @@ static void main_window_load(Window *window) {
 	text_layer_set_background_color(s_aperture_layer, GColorClear);
 	text_layer_set_text_color(s_aperture_layer, GColorBlack);
 	text_layer_set_text(s_aperture_layer, apertureToString(s_aperture_text, sizeof(s_aperture_text), s_aperture));
-	text_layer_set_font(s_aperture_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+	text_layer_set_font(s_aperture_layer, fonts_get_system_font(FONT_KEY_LECO_20_BOLD_NUMBERS));
   text_layer_set_text_alignment(s_aperture_layer, GTextAlignmentCenter);
 	
 	text_layer_set_background_color(s_yourAperture_layer, GColorClear);
@@ -265,7 +322,7 @@ static void main_window_load(Window *window) {
 	text_layer_set_background_color(s_hyperfocal_layer, GColorClear);
 	text_layer_set_text_color(s_hyperfocal_layer, GColorBlack);
 	text_layer_set_text(s_hyperfocal_layer, s_hyperfocal_text);
-	text_layer_set_font(s_hyperfocal_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
+	text_layer_set_font(s_hyperfocal_layer, fonts_get_system_font(FONT_KEY_LECO_26_BOLD_NUMBERS_AM_PM));
   text_layer_set_text_alignment(s_hyperfocal_layer, GTextAlignmentCenter);
 	
 	text_layer_set_background_color(s_yourHyperfocal_layer, GColorClear);
@@ -278,13 +335,16 @@ static void main_window_load(Window *window) {
 	
 	layer_add_child(window_layer, text_layer_get_layer(s_coc_layer));
 	layer_add_child(window_layer, text_layer_get_layer(s_yourCoc_layer));
-	layer_add_child(window_layer, text_layer_get_layer(s_focal_layer));
+	
 	layer_add_child(window_layer, text_layer_get_layer(s_yourFocal_layer));
-	layer_add_child(window_layer, text_layer_get_layer(s_aperture_layer));
+	layer_add_child(window_layer, text_layer_get_layer(s_focal_layer));
+
 	layer_add_child(window_layer, text_layer_get_layer(s_yourAperture_layer));
+	layer_add_child(window_layer, text_layer_get_layer(s_aperture_layer));
+	
 	layer_add_child(window_layer, text_layer_get_layer(s_hyperfocal_layer));
 	layer_add_child(window_layer, text_layer_get_layer(s_yourHyperfocal_layer));
-	
+
 	layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
 }
 
