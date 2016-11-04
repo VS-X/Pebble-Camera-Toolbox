@@ -3,6 +3,9 @@
 #define NUM_MENU_SECTIONS 1
 #define NUM_MENU_ITEMS 4
 
+#define NUM_SETTINGS_MENU_SECTIONS 1
+#define NUM_SETTINGS_MENU_ITEMS 1
+
 //TODO :
 // Window for settings (m/feet)
 // Menu
@@ -20,6 +23,11 @@ static Window *s_dof_window;
 static SimpleMenuLayer *s_simple_menu_layer;
 static SimpleMenuSection s_menu_sections[NUM_MENU_SECTIONS];
 static SimpleMenuItem s_menu_items[NUM_MENU_ITEMS];
+
+static SimpleMenuLayer *s_settings_menu_layer;
+static SimpleMenuSection s_settings_menu_sections[NUM_SETTINGS_MENU_SECTIONS];
+static SimpleMenuItem s_settings_menu_items[NUM_SETTINGS_MENU_ITEMS];
+
 
 static StatusBarLayer *s_status_bar;;
 
@@ -55,6 +63,8 @@ static float s_hyperfocal;
 static bool cocEditable = 1;
 static bool focalEditable = 0;
 static bool apertureEditable = 0;
+
+static bool metricUnits = 1;
 
 char* floatToString(char* buffer, int bufferSize, double number)
 	{
@@ -165,11 +175,29 @@ static void menu_select_callback(int index, void *ctx) {
     case 1:
 		  window_stack_push(s_hyperfocal_window, true);
 			update();
+			break;
+		case 3:
+			window_stack_push(s_settings_window, true);
+			break;
+    default:
+      break;
+  }
+	
+  layer_mark_dirty(simple_menu_layer_get_layer(s_simple_menu_layer));
+}
+
+static void settings_menu_select_callback(int index, void *ctx) {
+	
+  //s_menu_items[index].subtitle = "You've hit select here!";
+	switch (index) {
+    case 0:
+			metricUnits = !metricUnits;
+			break;
     default:
       return;
   }
 	
-  //layer_mark_dirty(simple_menu_layer_get_layer(s_simple_menu_layer));
+  layer_mark_dirty(simple_menu_layer_get_layer(s_settings_menu_layer));
 }
 
 static void select_click_handler_hyperfocal(ClickRecognizerRef recognizer, void *context){
@@ -422,6 +450,31 @@ static void menu_window_unload(Window *window) {
   simple_menu_layer_destroy(s_simple_menu_layer);
 }
 
+static void settings_window_load(Window *window) {
+  // Although we already defined NUM_FIRST_MENU_ITEMS, you can define
+  // an int as such to easily change the order of menu items later
+  int num_a_items = 0;
+
+  s_settings_menu_items[num_a_items++] = (SimpleMenuItem) {
+    .title = "Units: meters",
+    .callback = settings_menu_select_callback,
+  };
+  s_settings_menu_sections[0] = (SimpleMenuSection) {
+    .num_items = NUM_SETTINGS_MENU_ITEMS,
+    .items = s_settings_menu_items,
+  };
+	
+	Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_frame(window_layer);
+
+  s_settings_menu_layer = simple_menu_layer_create(bounds, window, s_settings_menu_sections, NUM_MENU_SECTIONS, NULL);
+
+  layer_add_child(window_layer, simple_menu_layer_get_layer(s_settings_menu_layer));
+}
+static void settings_window_unload(Window *window) {
+  simple_menu_layer_destroy(s_settings_menu_layer);
+}
+
 
 static void init() {
 	s_hyperfocal_window = window_create();
@@ -431,11 +484,11 @@ static void init() {
 	});
 	window_set_click_config_provider(s_hyperfocal_window, click_config_provider_hyperfocal);
 	
-	//s_settings_window = window_create();
-	//window_set_window_handlers(s_settings_window, (WindowHandlers) {
-	//	.load = settings_window_load,
-	//	.unload = settings_window_unload
-	//});
+	s_settings_window = window_create();
+	window_set_window_handlers(s_settings_window, (WindowHandlers) {
+		.load = settings_window_load,
+		.unload = settings_window_unload
+	});
 	//window_set_click_config_provider(s_settings_window, click_config_provider_settings);
 	
 	//s_dof_window = window_create();
