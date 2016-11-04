@@ -1,16 +1,25 @@
 #include <pebble.h>
 #define BG_COL_BLUE PBL_IF_COLOR_ELSE(GColorMidnightGreen, GColorBlack)
-
+#define NUM_MENU_SECTIONS 1
+#define NUM_MENU_ITEMS 4
 
 //TODO :
-// DONE Support pebble OG
-// Support Round
-// DONE Persistent
-// Companion app / window for settings
+// Window for settings (m/feet)
+// Menu
+// CoC Calculator
+// Depth of Field Calculator
 // Design
-// Logos
 
-static Window *s_main_window;
+
+static Window *s_hyperfocal_window;
+static Window *s_menu_window;
+static Window *s_coc_window;
+static Window *s_settings_window;
+static Window *s_dof_window;
+
+static SimpleMenuLayer *s_simple_menu_layer;
+static SimpleMenuSection s_menu_sections[NUM_MENU_SECTIONS];
+static SimpleMenuItem s_menu_items[NUM_MENU_ITEMS];
 
 static StatusBarLayer *s_status_bar;;
 
@@ -147,7 +156,23 @@ static void update() {
 	persist_write_int(key_aperture, s_aperture);
 }
 
-static void select_click_handler(ClickRecognizerRef recognizer, void *context){
+static void menu_select_callback(int index, void *ctx) {
+	
+  //s_menu_items[index].subtitle = "You've hit select here!";
+	switch (index) {
+    case 0:
+			return;
+    case 1:
+		  window_stack_push(s_hyperfocal_window, true);
+			update();
+    default:
+      return;
+  }
+	
+  //layer_mark_dirty(simple_menu_layer_get_layer(s_simple_menu_layer));
+}
+
+static void select_click_handler_hyperfocal(ClickRecognizerRef recognizer, void *context){
 	if (cocEditable == 1) {
 		cocEditable = 0;
 		focalEditable = 1;
@@ -171,7 +196,7 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context){
 	
 	update();
 }
-static void up_click_handler(ClickRecognizerRef recognizer, void *context){
+static void up_click_handler_hyperfocal(ClickRecognizerRef recognizer, void *context){
 	if (cocEditable == 1 && s_coc < 1000) {
 		s_coc = s_coc + 1;
 	}
@@ -196,7 +221,7 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context){
 	}
 	update();
 }
-static void down_click_handler(ClickRecognizerRef recognizer, void *context){
+static void down_click_handler_hyperfocal(ClickRecognizerRef recognizer, void *context){
 	if (cocEditable == 1 && s_coc > 1) {
 		s_coc = s_coc - 1;
 	}
@@ -221,7 +246,7 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context){
 	}
 	update();
 }
-static void click_config_provider(void *context) {
+static void click_config_provider_hyperfocal(void *context) {
   // Subcribe to button click events here
 	ButtonId b_select = BUTTON_ID_SELECT;
 	ButtonId b_up = BUTTON_ID_UP;
@@ -229,14 +254,14 @@ static void click_config_provider(void *context) {
 	
 	uint16_t repeat_interval_ms = 100;
 	
-	window_single_click_subscribe(b_select, select_click_handler);
-	window_single_click_subscribe(b_up, up_click_handler);
-	window_single_click_subscribe(b_down, down_click_handler);
-	window_single_repeating_click_subscribe(b_up, repeat_interval_ms, up_click_handler);
-	window_single_repeating_click_subscribe(b_down, repeat_interval_ms, down_click_handler);
+	window_single_click_subscribe(b_select, select_click_handler_hyperfocal);
+	window_single_click_subscribe(b_up, up_click_handler_hyperfocal);
+	window_single_click_subscribe(b_down, down_click_handler_hyperfocal);
+	window_single_repeating_click_subscribe(b_up, repeat_interval_ms, up_click_handler_hyperfocal);
+	window_single_repeating_click_subscribe(b_down, repeat_interval_ms, down_click_handler_hyperfocal);
 }
 
-static void main_window_load(Window *window) {
+static void hyperfocal_window_load(Window *window) {
 	// Get information about the Window
 	s_status_bar = status_bar_layer_create();
 	
@@ -347,8 +372,7 @@ static void main_window_load(Window *window) {
 
 	layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
 }
-
-static void main_window_unload(Window *window) {
+static void hyperfocal_window_unload(Window *window) {
 	status_bar_layer_destroy(s_status_bar);
 	text_layer_destroy(s_focal_layer);
 	text_layer_destroy(s_aperture_layer);
@@ -360,25 +384,81 @@ static void main_window_unload(Window *window) {
 	text_layer_destroy(s_yourHyperfocal_layer);
 }
 
+static void menu_window_load(Window *window) {
+  // Although we already defined NUM_FIRST_MENU_ITEMS, you can define
+  // an int as such to easily change the order of menu items later
+  int num_a_items = 0;
+
+  s_menu_items[num_a_items++] = (SimpleMenuItem) {
+    .title = "Circle of Conf",
+    .callback = menu_select_callback,
+  };
+  s_menu_items[num_a_items++] = (SimpleMenuItem) {
+    .title = "Hyperfocal",
+    .callback = menu_select_callback,
+  };
+  s_menu_items[num_a_items++] = (SimpleMenuItem) {
+    .title = "Depth of Field",
+    .callback = menu_select_callback,
+  };
+	  s_menu_items[num_a_items++] = (SimpleMenuItem) {
+    .title = "Settings",
+    .callback = menu_select_callback,
+  };
+
+  s_menu_sections[0] = (SimpleMenuSection) {
+    .num_items = NUM_MENU_ITEMS,
+    .items = s_menu_items,
+  };
+	
+	Layer *window_layer = window_get_root_layer(window);
+  GRect bounds = layer_get_frame(window_layer);
+
+  s_simple_menu_layer = simple_menu_layer_create(bounds, window, s_menu_sections, NUM_MENU_SECTIONS, NULL);
+
+  layer_add_child(window_layer, simple_menu_layer_get_layer(s_simple_menu_layer));
+}
+static void menu_window_unload(Window *window) {
+  simple_menu_layer_destroy(s_simple_menu_layer);
+}
+
+
 static void init() {
-	// Create main Window element and assign to pointer
-	s_main_window = window_create();
-	
-  // Set handlers to manage the elements inside the Window
-	window_set_window_handlers(s_main_window, (WindowHandlers) {
-		.load = main_window_load,
-		.unload = main_window_unload
+	s_hyperfocal_window = window_create();
+	window_set_window_handlers(s_hyperfocal_window, (WindowHandlers) {
+		.load = hyperfocal_window_load,
+		.unload = hyperfocal_window_unload
 	});
-	// Show the Window on the watch, with animated=true
-	window_stack_push(s_main_window, true);
-	// Use this provider to add button click subscriptions
-	window_set_click_config_provider(s_main_window, click_config_provider);
+	window_set_click_config_provider(s_hyperfocal_window, click_config_provider_hyperfocal);
 	
-	update();
+	//s_settings_window = window_create();
+	//window_set_window_handlers(s_settings_window, (WindowHandlers) {
+	//	.load = settings_window_load,
+	//	.unload = settings_window_unload
+	//});
+	//window_set_click_config_provider(s_settings_window, click_config_provider_settings);
+	
+	//s_dof_window = window_create();
+	//window_set_window_handlers(s_dof_window, (WindowHandlers) {
+	//	.load = dof_window_load,
+	//	.unload = dof_window_unload
+	//});
+	//window_set_click_config_provider(s_dof_window, click_config_provider_dof);
+	
+	s_menu_window = window_create();
+	window_set_window_handlers(s_menu_window, (WindowHandlers) {
+		.load = menu_window_load,
+		.unload = menu_window_unload
+	});
+	window_stack_push(s_menu_window, true);
+
 }
 
 static void deinit() {
-	window_destroy(s_main_window);
+	window_destroy(s_settings_window);
+	window_destroy(s_menu_window);
+	window_destroy(s_hyperfocal_window);
+	window_destroy(s_dof_window);
 }
 
 int main(void) {

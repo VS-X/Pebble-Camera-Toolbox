@@ -2,22 +2,14 @@
     "author": "Pirate Experiment",
     "dependencies": {},
     "keywords": [],
-    "name": "camera-toolbox",
+    "name": "camtoolbox",
     "pebble": {
         "displayName": "Camera Toolbox",
         "enableMultiJS": true,
         "messageKeys": [],
         "projectType": "native",
         "resources": {
-            "media": [
-                {
-                    "characterRegex": "{0-9]",
-                    "file": "fonts/teko",
-                    "name": "FONT_TEKO_24",
-                    "targetPlatforms": null,
-                    "type": "font"
-                }
-            ]
+            "media": []
         },
         "sdkVersion": "3",
         "targetPlatforms": [
