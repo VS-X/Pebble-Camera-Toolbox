@@ -49,7 +49,8 @@ static char s_coc_text[8];
 const char yourFocal_text[6] = "Focal\0";
 const char yourAperture_text[3] = "f/\0";
 const char yourCoc_text[20] = PBL_IF_RECT_ELSE("Circle of Confusion\0", "CoC\0");
-const char yourHyperfocal_text[14] = "Hyperfocal(m)\0";
+const char yourHyperfocal_text_meter[14] = "Hyperfocal(m)\0";
+const char yourHyperfocal_text_feet[15] = "Hyperfocal(ft)\0";
 
 uint32_t key_coc = 19;
 uint32_t key_focal = 30;
@@ -64,18 +65,29 @@ static bool cocEditable = 1;
 static bool focalEditable = 0;
 static bool apertureEditable = 0;
 
+uint32_t key_units;
 static bool metricUnits = 1;
 
 char* floatToString(char* buffer, int bufferSize, double number)
 	{
 		char decimalBuffer[5];
-
+		if (metricUnits == 1)
+		{
 		snprintf(buffer, bufferSize, "%d", (int)number);
 		if ((int)number < 10) {
 		strcat(buffer, ".");
 		snprintf(decimalBuffer, 5, "%02d", (int)((float)(number - (int)number) * (float)100));
 		strcat(buffer, decimalBuffer);
-		
+		}
+		}
+		else {
+		number = (number * 328 / 100);
+		snprintf(buffer, bufferSize, "%d", (int)number);
+		if ((int)number < 10) {
+		strcat(buffer, ".");
+		snprintf(decimalBuffer, 5, "%02d", (int)((float)(number - (int)number) * (float)100));
+		strcat(buffer, decimalBuffer);
+		}
 		}
 		//strcat(buffer, "m");
 		return buffer;
@@ -164,6 +176,7 @@ static void update() {
 	persist_write_int(key_coc, s_coc);
 	persist_write_int(key_focal, s_focal);
 	persist_write_int(key_aperture, s_aperture);
+	
 }
 
 static void menu_select_callback(int index, void *ctx) {
@@ -191,7 +204,14 @@ static void settings_menu_select_callback(int index, void *ctx) {
   //s_menu_items[index].subtitle = "You've hit select here!";
 	switch (index) {
     case 0:
+			if (metricUnits == 1) {
+				s_settings_menu_items[index].title = "Unit: feet";
+			}
+			else {
+				s_settings_menu_items[index].title = "Unit: meter";
+			}
 			metricUnits = !metricUnits;
+			persist_write_bool(key_units, metricUnits);
 			break;
     default:
       return;
@@ -380,7 +400,12 @@ static void hyperfocal_window_load(Window *window) {
 	
 	text_layer_set_background_color(s_yourHyperfocal_layer, GColorClear);
 	text_layer_set_text_color(s_yourHyperfocal_layer, GColorBlack);
-	text_layer_set_text(s_yourHyperfocal_layer, yourHyperfocal_text);
+	if (metricUnits == 1) {
+		text_layer_set_text(s_yourHyperfocal_layer, yourHyperfocal_text_meter);
+	}
+	else {
+		text_layer_set_text(s_yourHyperfocal_layer, yourHyperfocal_text_feet);
+	}
 	text_layer_set_font(s_yourHyperfocal_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24));
   text_layer_set_text_alignment(s_yourHyperfocal_layer, GTextAlignmentCenter);
 	
@@ -399,6 +424,8 @@ static void hyperfocal_window_load(Window *window) {
 	layer_add_child(window_layer, text_layer_get_layer(s_yourHyperfocal_layer));
 
 	layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
+	
+	
 }
 static void hyperfocal_window_unload(Window *window) {
 	status_bar_layer_destroy(s_status_bar);
@@ -413,8 +440,15 @@ static void hyperfocal_window_unload(Window *window) {
 }
 
 static void menu_window_load(Window *window) {
-  // Although we already defined NUM_FIRST_MENU_ITEMS, you can define
-  // an int as such to easily change the order of menu items later
+
+	if (persist_exists(key_units)) {
+  // Read persisted value
+  metricUnits = persist_read_bool(key_units);
+	} 
+	else {
+  metricUnits = 1;
+	}
+	
   int num_a_items = 0;
 
   s_menu_items[num_a_items++] = (SimpleMenuItem) {
@@ -454,11 +488,20 @@ static void settings_window_load(Window *window) {
   // Although we already defined NUM_FIRST_MENU_ITEMS, you can define
   // an int as such to easily change the order of menu items later
   int num_a_items = 0;
-
-  s_settings_menu_items[num_a_items++] = (SimpleMenuItem) {
-    .title = "Units: meters",
+	
+	if (metricUnits == 1) {
+		s_settings_menu_items[num_a_items++] = (SimpleMenuItem) {
+    .title = "Unit: meter",
+    .callback = settings_menu_select_callback,
+  	};
+	}
+	else {
+		s_settings_menu_items[num_a_items++] = (SimpleMenuItem) {
+    .title = "Unit: feet",
     .callback = settings_menu_select_callback,
   };
+	}
+  
   s_settings_menu_sections[0] = (SimpleMenuSection) {
     .num_items = NUM_SETTINGS_MENU_ITEMS,
     .items = s_settings_menu_items,
