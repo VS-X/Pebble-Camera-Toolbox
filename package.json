@@ -11,6 +11,13 @@
         "resources": {
             "media": [
                 {
+                    "characterRegex": "[A-Za-z0-9/\\,. -\"]",
+                    "file": "fonts/LECO2014",
+                    "name": "FONT_LECO_18",
+                    "targetPlatforms": null,
+                    "type": "font"
+                },
+                {
                     "file": "images/menu_image",
                     "menuIcon": true,
                     "name": "IMAGE_MENU",
@@ -27,10 +34,10 @@
             "diorite",
             "emery"
         ],
-        "uuid": "3ca8bef6-582c-46f1-9cd9-2a4db767edab",
+        "uuid": "12ba8f1b-1210-4a59-b863-1ddc5189e30e",
         "watchapp": {
             "watchface": false
         }
     },
-    "version": "1.0.0"
+    "version": "1.1.0"
 }
